@@ -11,7 +11,6 @@ datasource db {
 
 model User {
   id        Int      @id @default(autoincrement())
-  // name      String
   email     String   @unique
   hash      String
   hashedRT  String?
@@ -19,12 +18,13 @@ model User {
   otp Otp[]
   isSuperAdmin Boolean @default(false)
   isBanned Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  // name      String
   // role      String
   // role  Role   @default(USER) // Define user roles
-  createdAt DateTime @default(now())
   // updatedAt DateTime 
-
-
+  
   @@map("users")
 }
 

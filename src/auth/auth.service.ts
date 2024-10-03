@@ -1,15 +1,11 @@
-import {
-  ForbiddenException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthDto, ResetPsswordDto } from './dto';
+import { AuthDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { Tokens } from './type';
 
 import { JwtService } from '@nestjs/jwt';
-import { nanoid } from 'nanoid';
+
 import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
@@ -34,8 +30,6 @@ export class AuthService {
           email: dto.email,
           hash,
           isSuperAdmin: true,
-          // name: dto.name,
-          // role: dto.role,
         },
       });
       const tokens = await this.getTokens(newUser.id, newUser.email);
@@ -48,8 +42,6 @@ export class AuthService {
       data: {
         email: dto.email,
         hash,
-        // name: dto.name,
-        // role: dto.role,
       },
     });
 
@@ -94,9 +86,6 @@ export class AuthService {
     if (user) {
       const expiryDate = new Date();
       expiryDate.setHours(expiryDate.getHours() + 1);
-
-      // generat password reset link
-      // const resetToken = nanoid(64);
       const generatOtp = Math.floor(1000 + Math.random() * 9000);
 
       console.log(`generated otp + ${generatOtp}`);
@@ -114,29 +103,21 @@ export class AuthService {
             otpCode: generatOtp,
             userId: user.id,
             expiryDate,
-            // name: dto.name,
-            // role: dto.role,
           },
         });
       }
-
-      // send link to the user by email}
-      // return {
-      //   message: `RTemail + ${email}`,
-      // };
     }
 
     return { message: 'If email exist, you will get an email' };
   }
 
   // --------------- Reset Password Confirmation--------------------------------------------
+
   async resetPasswordConfirmation(
     newPassword: string,
     otp: number,
     email: string,
   ) {
-    // console.log(`data: + ${newPassword}, ${otp}, ${email}`);
-    // check if the user exsit
     const user = await this.prismaService.user.findUnique({
       where: {
         email: email,
@@ -145,7 +126,8 @@ export class AuthService {
 
     if (!user) throw new ForbiddenException('Access Denied');
 
-    // check the validity of the otp
+    //-------------------------------------- check the validity of otp
+
     const valideOtp = await this.prismaService.otp.findUnique({
       where: {
         userId_otpCode: {
@@ -163,8 +145,6 @@ export class AuthService {
     // compare the new password
     const comparePassword = await bcrypt.compare(newPassword, user.hash);
 
-    // console.log(`compared + ${comparePassword}`);
-
     if (comparePassword) throw new ForbiddenException('Give new password');
 
     // hash new password
@@ -179,46 +159,6 @@ export class AuthService {
         hash: newPasswordHashed,
       },
     });
-
-    // check the validity of reset token
-    // console.log(`token + ${resetToken}`);
-    // const token = await this.prismaService.resetToken.findUnique({
-    //   where: {
-    //     token: resetToken,
-    //     expiryDate: {
-    //       gte: new Date(),
-    //     },
-    //   },
-
-    //   select: {
-    //     userId: true,
-    //   },
-    // });
-
-    // if (!token) throw new ForbiddenException('Invalid link');
-
-    // hash and save new password
-
-    // const user = await this.prismaService.user.findUnique({
-    //   where: {
-    //     id: token.userId,
-    //   },
-    // });
-
-    // if (!token) {
-    //   throw new InternalServerErrorException();
-    // }
-
-    // console.log(`user + ${user.email}`);
-    // const newPasswordHashed = await bcrypt.hash(newPassword, 10);
-    // const updatedUser = await this.prismaService.user.update({
-    //   where: {
-    //     email: user.email,
-    //   },
-    //   data: {
-    //     hash: newPasswordHashed,
-    //   },
-    // });
 
     return { message: `Password reset Successfully + ${updatedUser}` };
   }
@@ -270,14 +210,10 @@ export class AuthService {
       },
     });
 
-    console.log(`Admin from db + ${findAdmin.email}`);
-
     if (!findAdmin) throw new ForbiddenException('Access Denied');
 
     if (userIdParsed === findAdmin.id)
       throw new ForbiddenException('You are trying to ban your self');
-
-    console.log(`user id from param + ${userID} + ${findAdmin.id}`);
 
     const banUser = await this.prismaService.user.update({
       where: {
@@ -298,8 +234,6 @@ export class AuthService {
   hashData(data: string) {
     return bcrypt.hash(data, 0);
   }
-
-  // -------------------------- reset token ------------------------------------
 
   // -------------------------- Get token ------------------------------------
 
@@ -345,26 +279,3 @@ export class AuthService {
     });
   }
 }
-
-// if (!user) throw new ForbiddenException('Access Denied');
-
-// const rtMatches = await bcrypt.compare(
-//   resetPasswordDto.resetToken,
-//   user.hashedRT,
-// );
-// if (!rtMatches) throw new ForbiddenException('Access Denied');
-
-// const newPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
-
-// const updatedUser = await this.prismaService.user.update({
-//   where: {
-//     email: resetPasswordDto.email,
-//   },
-//   data: {
-//     hash: newPassword,
-//   },
-// });
-
-// const tokens = await this.getTokens(updatedUser.id, updatedUser.email);
-// await this.updateRtHash(updatedUser.id, tokens.refresh_token);
-// return tokens;

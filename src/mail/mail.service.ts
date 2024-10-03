@@ -1,7 +1,5 @@
 import * as nodemailer from 'nodemailer';
 import { Injectable } from '@nestjs/common';
-// import { hostname } from 'os';
-// import { from, Subject } from 'rxjs';
 
 @Injectable()
 export class MailService {
@@ -19,7 +17,6 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, otp: number) {
-    // const resetLink = `http://yourapp.com/resetPassword-confirmation?`;
     const mailoptions = {
       from: 'Auth-backend service',
       to: to,
@@ -29,9 +26,6 @@ export class MailService {
     };
 
     await this.transporter.sendMail(mailoptions);
-    // return {
-    //   message: `MSemail + ${to}`,
-    // };
     return true;
   }
 }

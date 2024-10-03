@@ -14,10 +14,7 @@ import { AuthService } from './auth.service';
 import { AuthDto, ResetPsswordDto, ResetPsswordConfirmationDto } from './dto';
 import { Tokens } from './type';
 import { AuthGuard } from '@nestjs/passport';
-// import { Request } from 'supertest';
 import { Request } from 'express';
-import { Admin } from 'src/decorators/admin.decorator';
-import { AtStrategy } from './strategies';
 
 @Controller('auth')
 export class AuthController {
@@ -66,14 +63,6 @@ export class AuthController {
       resetPasswordConfirmationDto.email,
     );
   }
-
-  // @UseGuards(AtStrategy)
-  // @Patch('/ban/:id')
-  // async banUser(@Param('id') userId: number, @Admin() admin) {
-  //   console.log(`admin + ${admin}`);
-  //   const adminEmail = admin.email;
-  //   return this.authService.banUser(userId, adminEmail);
-  // }
   @UseGuards(AuthGuard('jwt'))
   @Patch('/ban/:id')
   @HttpCode(HttpStatus.OK)
