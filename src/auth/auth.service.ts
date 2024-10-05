@@ -21,12 +21,12 @@ export class AuthService {
   async signup(dto: AuthDto): Promise<Tokens> {
     const firstUser = await this.prismaService.user.findFirst();
 
-    console.log(`user + ${firstUser}`);
-
     if (!firstUser) {
       const hash = await this.hashData(dto.password);
       const newUser = await this.prismaService.user.create({
         data: {
+          firstName: dto.firstName,
+          lastName: dto.lastName,
           email: dto.email,
           hash,
           isSuperAdmin: true,
@@ -37,9 +37,19 @@ export class AuthService {
       return tokens;
     }
 
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email: dto.email,
+      },
+    });
+
+    if (user) throw new ForbiddenException('You have an account please login');
+
     const hash = await this.hashData(dto.password);
     const newUser = await this.prismaService.user.create({
       data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
         email: dto.email,
         hash,
       },
@@ -58,8 +68,6 @@ export class AuthService {
         email: dto.email,
       },
     });
-
-    console.log(`isSuperAdmin + ${user.isSuperAdmin}`);
 
     if (!user) throw new ForbiddenException('Access Denied');
 
@@ -81,21 +89,15 @@ export class AuthService {
       },
     });
 
-    console.log(`user + ${user}`);
-
     if (user) {
       const expiryDate = new Date();
       expiryDate.setHours(expiryDate.getHours() + 1);
       const generatOtp = Math.floor(1000 + Math.random() * 9000);
 
-      console.log(`generated otp + ${generatOtp}`);
-
       const success = this.mailService.sendPasswordResetEmail(
         email,
         generatOtp,
       );
-
-      console.log(success);
 
       if (success) {
         await this.prismaService.otp.create({
@@ -126,7 +128,7 @@ export class AuthService {
 
     if (!user) throw new ForbiddenException('Access Denied');
 
-    //-------------------------------------- check the validity of otp
+    // check the validity of otp
 
     const valideOtp = await this.prismaService.otp.findUnique({
       where: {
