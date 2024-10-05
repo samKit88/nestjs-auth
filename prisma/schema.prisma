@@ -11,30 +11,17 @@ datasource db {
 
 model User {
   id        Int      @id @default(autoincrement())
+  firstName String 
+  lastName String
   email     String   @unique
   hash      String
   hashedRT  String?
-  resetTokens  ResetToken[]  // One-to-many relationship with ResetToken
-  otp Otp[]
+  otp Otp[] // one to many
   isSuperAdmin Boolean @default(false)
   isBanned Boolean @default(false)
   createdAt DateTime @default(now())
 
-  // name      String
-  // role      String
-  // role  Role   @default(USER) // Define user roles
-  // updatedAt DateTime 
-  
   @@map("users")
-}
-
-model ResetToken {
-   id        Int      @id @default(autoincrement())
-  userId  Int   
-  token String  @unique
-  user    User      @relation(fields: [userId], references: [id])
-  expiryDate DateTime
-  @@map("resetToken")
 }
 
 model Otp {
@@ -48,7 +35,66 @@ model Otp {
   @@map("otp")
 }
 
-// enum Role {
-//   USER
-//   SUPER_ADMIN
-// }
+model Inventory {
+  id Int @id @default(autoincrement())
+  name String
+  barcode String
+  categoryId Int
+  category Category @relation(fields: [categoryId], references: [id])
+  brandId Int
+  brand Brand @relation(fields: [brandId], references: [id])
+  buyingPrice Decimal @db.Money
+  sellingPrice Decimal @db.Money
+  productUnit Unit
+  quantity Int
+  minStock Int @default(10)
+  taxType Tax
+  description String
+  produtType Product
+  imageId Image[] // one to many
+
+  @@map("inventory")
+}
+
+model Category {
+  id Int @id @default(autoincrement())
+  name String @unique
+  inventory Inventory[] // one to many
+
+  @@map("catefory")
+}
+
+model Brand {
+  id Int @id @default(autoincrement())
+  name String @unique
+  inventory Inventory[] // one to many
+
+  @@map("brand")
+}
+
+model Image {
+  id Int @id @default(autoincrement())
+  imageId Int
+  imageURL String
+  inventory Inventory @relation(fields: [imageId], references: [id])
+  
+  @@map("image")
+}
+
+enum Unit {
+  pieces
+  kilograms
+  liters
+  boxes 
+  meters
+}
+
+enum Tax {
+  taxable
+  nonTaxable 
+}
+
+enum Product {
+  Sale
+  Use
+}
