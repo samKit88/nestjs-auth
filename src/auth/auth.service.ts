@@ -199,6 +199,39 @@ export class AuthService {
     return tokens;
   }
 
+  // -------------------------- create user ----------------------------------
+  async createUser(adminEmail: string, dto: AuthDto) {
+    const findAdmin = await this.prismaService.user.findUnique({
+      where: {
+        email: adminEmail,
+        isSuperAdmin: true,
+      },
+    });
+
+    if (!findAdmin) throw new ForbiddenException('Access denied');
+
+    const checkUser = await this.prismaService.user.findUnique({
+      where: {
+        email: dto.email,
+      },
+    });
+
+    if (checkUser) throw new ForbiddenException('User Exsis');
+
+    const password = await bcrypt.hash(dto.password, 10);
+
+    const newUser = await this.prismaService.user.create({
+      data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        hash: password,
+      },
+    });
+
+    return [newUser.firstName, newUser.lastName, newUser.email];
+  }
+
   // -------------------------- ban user ------------------------------------
 
   async banUser(userID: string, adminEmail: string) {
@@ -248,7 +281,7 @@ export class AuthService {
         },
         {
           secret: 'at-secret',
-          expiresIn: 60 * 15,
+          expiresIn: 60 * 60 * 24,
         },
       ),
       this.jwtService.signAsync(
