@@ -171,27 +171,3 @@ export class InventoryService {
     return deleteInve.name;
   }
 }
-
-// {
-//   "name": "Clasi",
-
-//   "barcode": "Sam",
-
-//   "category": 1,
-
-//   "brand": 1,
-
-//   "buyingPrice": 4,
-
-//   "sellingPrice": 5,
-
-//   "productUnit": "kilograms",
-
-//   "quantity": 7,
-
-//   "taxType": "taxable",
-
-//   "description": "asdfasdfasdf",
-
-//   "produtType": "Sale"
-// }
