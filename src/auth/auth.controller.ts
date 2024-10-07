@@ -15,6 +15,7 @@ import { AuthDto, ResetPsswordDto, ResetPsswordConfirmationDto } from './dto';
 import { Tokens } from './type';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
+import { create } from 'domain';
 
 @Controller('auth')
 export class AuthController {
@@ -72,5 +73,13 @@ export class AuthController {
 
     const adminEmail = req.user;
     return this.authService.banUser(userId, adminEmail['email']);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('/create-user')
+  @HttpCode(HttpStatus.OK)
+  createUser(@Req() req: Request, @Body() dto: AuthDto) {
+    const adminEmail = req.user;
+    return this.authService.createUser(adminEmail['email'], dto);
   }
 }

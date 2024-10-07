@@ -9,10 +9,12 @@ import { ConfigModule } from '@nestjs/config';
 import config from './config/config';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from './mail/mail.service';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
     AuthModule,
+    InventoryModule,
     PrismaModule,
     ConfigModule.forRoot({
       cache: true,
@@ -28,6 +30,7 @@ import { MailService } from './mail/mail.service';
       global: true,
       inject: [ConfigService],
     }),
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

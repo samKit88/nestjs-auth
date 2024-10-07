@@ -20,7 +20,7 @@ model User {
   isSuperAdmin Boolean @default(false)
   isBanned Boolean @default(false)
   createdAt DateTime @default(now())
-
+  inventory Inventory[]
   @@map("users")
 }
 
@@ -37,6 +37,8 @@ model Otp {
 
 model Inventory {
   id Int @id @default(autoincrement())
+  userId Int 
+  user User @relation(fields: [userId], references: [id])
   name String
   barcode String
   categoryId Int
@@ -61,7 +63,7 @@ model Category {
   name String @unique
   inventory Inventory[] // one to many
 
-  @@map("catefory")
+  @@map("category")
 }
 
 model Brand {
