@@ -16,6 +16,7 @@ import { InventoryModule } from './inventory/inventory.module';
     AuthModule,
     InventoryModule,
     PrismaModule,
+
     ConfigModule.forRoot({
       cache: true,
       isGlobal: true,
