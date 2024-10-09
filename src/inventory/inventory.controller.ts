@@ -23,6 +23,7 @@ import { BrandDto } from './dto/brand.dto';
 import { QueryDto } from './dto/query.dto';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from 'src/utils/constants';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UpdateDto } from './dto/update.dto';
 
 @Controller('inventory')
 export class InventoryController {
@@ -33,18 +34,17 @@ export class InventoryController {
     const page = parseInt(queryDto.page || `${DEFAULT_PAGE}`);
     const limit = parseInt(queryDto.limit || `${DEFAULT_PAGE_SIZE}`);
 
-    // console.log(queryDto.sort);
     return this.invService.getAll(page, limit, queryDto);
   }
 
-  @Get('/id')
-  getById(@Param() param) {
-    const reqId = param.id.parseInt;
+  @Get('/:id')
+  getById(@Param('id') id: string) {
+    const reqId = parseInt(id);
     return this.invService.getByID(reqId);
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Post('/create')
+  @Post()
   @HttpCode(HttpStatus.OK)
   createNewinv(@Body() dto: InveDto, @Req() req: Request) {
     const user = req.user;
@@ -58,6 +58,7 @@ export class InventoryController {
     const user = req.user;
     return this.invService.createNewCategory(dto, user['email']);
   }
+
   @UseGuards(AuthGuard('jwt'))
   @Post('/create-brand')
   @HttpCode(HttpStatus.OK)
@@ -72,7 +73,7 @@ export class InventoryController {
   updateInventory(
     @Param('id') id: string,
     @Req() req: Request,
-    @Body() dto: InveDto,
+    @Body() dto: UpdateDto,
   ) {
     const user = req.user;
     const inventoryId = parseInt(id);
@@ -84,7 +85,6 @@ export class InventoryController {
   deleteInventory(@Param('id') id: string, @Req() req) {
     const user = req.user;
     const inventoryId = parseInt(id);
-    console.log(inventoryId);
     return this.invService.deleteInventory(inventoryId, user['email']);
   }
 
@@ -102,13 +102,13 @@ export class InventoryController {
     return this.invService.uploadImage(inventoryId, fileUrl);
   }
 
-  @Get('/:id/image')
+  @Get('/:id/images')
   getImageById(@Param('id') id: string) {
     const inventoryId = parseInt(id);
     return this.invService.getImageById(inventoryId);
   }
 
-  @Delete('/:id/image/:imageId')
+  @Delete('/:id/images/:imageId')
   deleteImageById(@Param('id') id: string, @Param('imageId') imageId: string) {
     const inventoryId = parseInt(id);
     const deleteImageId = parseInt(imageId);

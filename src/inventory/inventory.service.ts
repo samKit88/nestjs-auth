@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { InveDto } from './dto/inve.dto';
 import { CategoryDto } from './dto/category.dto';
@@ -6,21 +10,21 @@ import { BrandDto } from './dto/brand.dto';
 import { QueryDto } from './dto/query.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { error } from 'console';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
 export class InventoryService {
   constructor(private prismaService: PrismaService) {}
 
   async getAll(page: number, limit: number, queryDto: QueryDto) {
-    const skipItem = (page - 1) * 10;
+    const skipItem = (page - 1) * limit;
     const productes = await this.prismaService.inventory.findMany({
       skip: skipItem,
       take: limit,
       where: { name: { contains: queryDto.search } },
       orderBy: { [queryDto.sort]: queryDto.order },
     });
-
-    // console.log(productes);
 
     if (!productes) return 'No producte';
 
@@ -34,26 +38,30 @@ export class InventoryService {
       },
     });
 
+    if (!producte)
+      throw new NotFoundException(`item with ID ${reqId} doesn't exist.`);
+
     return producte;
   }
 
-  async createNewinv(dto: InveDto, adminEmail) {
-    const isAdmin = await this.prismaService.user.findUnique({
+  async createNewinv(dto: InveDto, userEmail: string) {
+    console.log(JSON.stringify(dto));
+    const isUser = await this.prismaService.user.findUnique({
       where: {
-        email: adminEmail,
-        isSuperAdmin: true,
+        email: userEmail,
       },
     });
 
-    if (!isAdmin) throw new ForbiddenException('Access Denied');
+    if (!isUser) throw new ForbiddenException('Access Denied');
 
     const newProducte = await this.prismaService.inventory.create({
       data: {
         name: dto.name,
-        userId: isAdmin.id,
+        userId: isUser.id,
+        // user: { connect: { id: isUser.id } },
         barcode: dto.barcode,
-        categoryId: dto.category,
-        brandId: dto.brand,
+        categoryId: dto.categoryId,
+        brandId: dto.brandId,
         buyingPrice: dto.buyingPrice,
         sellingPrice: dto.sellingPrice,
         productUnit: dto.productUnit,
@@ -67,15 +75,14 @@ export class InventoryService {
     return newProducte;
   }
 
-  async createNewCategory(dto: CategoryDto, adminEmail) {
-    const isAdmin = await this.prismaService.user.findUnique({
+  async createNewCategory(dto: CategoryDto, userEmai: string) {
+    const isUser = await this.prismaService.user.findUnique({
       where: {
-        email: adminEmail,
-        isSuperAdmin: true,
+        email: userEmai,
       },
     });
 
-    if (!isAdmin) throw new ForbiddenException('Access Denied');
+    if (!isUser) throw new ForbiddenException('Access Denied');
 
     const checkCategory = await this.prismaService.category.findUnique({
       where: {
@@ -94,15 +101,22 @@ export class InventoryService {
     return newCategory.name;
   }
 
-  async createNewBrand(dto: BrandDto, adminEmail) {
-    const isAdmin = await this.prismaService.user.findUnique({
+  async createNewBrand(dto: BrandDto, userEmail: string) {
+    const isUser = await this.prismaService.user.findUnique({
       where: {
-        email: adminEmail,
-        isSuperAdmin: true,
+        email: userEmail,
       },
     });
 
-    if (!isAdmin) throw new ForbiddenException('Access Denied');
+    if (!isUser) throw new ForbiddenException('Access Denied');
+
+    const checkBrand = await this.prismaService.brand.findUnique({
+      where: {
+        name: dto.name,
+      },
+    });
+
+    if (checkBrand) throw new ForbiddenException('Brand Exsit');
 
     const newBrand = await this.prismaService.brand.create({
       data: {
@@ -113,23 +127,23 @@ export class InventoryService {
     return newBrand.name;
   }
 
-  async updateInventory(inventoryId: number, adminEmail, dto: InveDto) {
-    const isAdmin = await this.prismaService.user.findUnique({
+  async updateInventory(inventoryId: number, userEmail: string, dto: InveDto) {
+    const isUser = await this.prismaService.user.findUnique({
       where: {
-        email: adminEmail,
-        isSuperAdmin: true,
+        email: userEmail,
       },
     });
 
-    if (!isAdmin) throw new ForbiddenException('Access Denied');
+    if (!isUser) throw new ForbiddenException('Access Denied');
 
-    const checkInventory = await this.prismaService.inventory.findUnique({
+    const checkItem = await this.prismaService.inventory.findUnique({
       where: {
         id: inventoryId,
       },
     });
 
-    if (!checkInventory) throw new ForbiddenException('Not found');
+    if (!checkItem)
+      throw new NotFoundException(`Item with ID ${inventoryId} doesn't exist`);
 
     const updatedInve = await this.prismaService.inventory.update({
       where: {
@@ -137,10 +151,10 @@ export class InventoryService {
       },
       data: {
         name: dto.name,
-        userId: isAdmin.id,
+        userId: isUser.id,
         barcode: dto.barcode,
-        categoryId: dto.category,
-        brandId: dto.brand,
+        categoryId: dto.categoryId,
+        brandId: dto.brandId,
         buyingPrice: dto.buyingPrice,
         sellingPrice: dto.sellingPrice,
         productUnit: dto.productUnit,
@@ -154,15 +168,14 @@ export class InventoryService {
     return updatedInve;
   }
 
-  async deleteInventory(inventoryId: number, adminEmail: string) {
-    const isAdmin = await this.prismaService.user.findUnique({
+  async deleteInventory(inventoryId: number, userEmail: string) {
+    const isUser = await this.prismaService.user.findUnique({
       where: {
-        email: adminEmail,
-        isSuperAdmin: true,
+        email: userEmail,
       },
     });
 
-    if (!isAdmin) throw new ForbiddenException('Access Denied');
+    if (!isUser) throw new ForbiddenException('Access Denied');
 
     const checkInventory = await this.prismaService.inventory.findUnique({
       where: {
@@ -178,7 +191,7 @@ export class InventoryService {
       },
     });
 
-    return deleteInve.name;
+    if (deleteInve) return 'Item successfully deleted.';
   }
 
   async uploadImage(inventoryId: number, fileUrl: string) {
@@ -206,39 +219,52 @@ export class InventoryService {
       },
     });
 
-    return `Image saved successfuly! ${image}`;
+    return 'images successfully uploaded.';
   }
 
   async getImageById(inventoryId: number) {
-    const producte = await this.prismaService.inventory.findUnique({
+    const item = await this.prismaService.inventory.findUnique({
       where: {
         id: inventoryId,
       },
     });
 
-    if (!producte) throw new ForbiddenException('No Producte!!!');
+    if (!item)
+      throw new NotFoundException(`Itme whit Id ${inventoryId} not found`);
 
-    const producteImages = await this.prismaService.image.findMany({
+    const itemImages = await this.prismaService.image.findMany({
       where: {
-        imageId: producte.id,
+        imageId: item.id,
       },
     });
-    return producteImages;
+
+    return itemImages;
   }
 
   async deleteImage(inventoryId: number, deleteImageId: number) {
-    const producte = await this.prismaService.inventory.findUnique({
+    const item = await this.prismaService.inventory.findUnique({
       where: {
         id: inventoryId,
       },
     });
 
-    if (!producte) throw new ForbiddenException('No Producte');
+    if (!item)
+      throw new NotFoundException(`Item with Id ${inventoryId} not found`);
+
+    const findImage = await this.prismaService.image.findUnique({
+      where: {
+        id: deleteImageId,
+        imageId: item.id,
+      },
+    });
+
+    if (!findImage)
+      throw new NotFoundException(`Image with Id ${deleteImageId} not found`);
 
     const imageDeleted = await this.prismaService.image.delete({
       where: {
         id: deleteImageId,
-        imageId: producte.id,
+        imageId: item.id,
       },
     });
 
