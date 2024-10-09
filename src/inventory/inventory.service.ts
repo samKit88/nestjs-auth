@@ -12,8 +12,9 @@ export class InventoryService {
   constructor(private prismaService: PrismaService) {}
 
   async getAll(page: number, limit: number, queryDto: QueryDto) {
+    const skipItem = (page - 1) * 10;
     const productes = await this.prismaService.inventory.findMany({
-      skip: page,
+      skip: skipItem,
       take: limit,
       where: { name: { contains: queryDto.search } },
       orderBy: { [queryDto.sort]: queryDto.order },
